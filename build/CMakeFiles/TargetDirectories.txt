@@ -1,0 +1,6 @@
+/mnt/c/Users/andre/Desktop/praxis3/build/CMakeFiles/zmq_distributor.dir
+/mnt/c/Users/andre/Desktop/praxis3/build/CMakeFiles/zmq_worker.dir
+/mnt/c/Users/andre/Desktop/praxis3/build/CMakeFiles/package.dir
+/mnt/c/Users/andre/Desktop/praxis3/build/CMakeFiles/package_source.dir
+/mnt/c/Users/andre/Desktop/praxis3/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/andre/Desktop/praxis3/build/CMakeFiles/rebuild_cache.dir
