@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <assert.h>
-#include <pthread.h>
-
 
 #define MAX_MSG_LEN 1497
 
@@ -16,21 +13,30 @@ int main(int argc, char *argv[]) {
 
     FILE *file = fopen(argv[1], "r");
     if (!file) {
+        perror("Fehler beim Öffnen der Datei");
         return 1;
     }
 
-    char text[MAX_MSG_LEN];
-    fread(text, 1, sizeof(text) - 1, file);
+    char text[MAX_MSG_LEN] = {0};  // Puffer mit 0 initialisieren
+    size_t read_bytes = fread(text, 1, sizeof(text) - 1, file);
     fclose(file);
-    text[strlen(text)] = '\0';
+    text[read_bytes] = '\0';
 
     void *context = zmq_ctx_new();
     void *requester = zmq_socket(context, ZMQ_REQ);
+    if (!context || !requester) {
+        fprintf(stderr, "Fehler beim Erstellen des ZMQ-Sockets.\n");
+        zmq_close(requester);
+        zmq_ctx_term(context);
+        return 1;
+    }
 
     for (int i = 2; i < argc; i++) {
         char endpoint[30];
         snprintf(endpoint, sizeof(endpoint), "tcp://localhost:%s", argv[i]);
-        zmq_connect(requester, endpoint);
+        if (zmq_connect(requester, endpoint) != 0) {
+            fprintf(stderr, "Fehler beim Verbinden mit Worker auf Port %s\n", argv[i]);
+        }
     }
 
     char map_request[MAX_MSG_LEN];
@@ -38,12 +44,20 @@ int main(int argc, char *argv[]) {
 
     zmq_send(requester, map_request, strlen(map_request), 0);
 
-    char map_result[MAX_MSG_LEN];
-    zmq_recv(requester, map_result, MAX_MSG_LEN, 0);
+    char map_result[MAX_MSG_LEN] = {0}; // Direkte Initialisierung auf 0
+    int received_bytes = zmq_recv(requester, map_result, MAX_MSG_LEN - 1, 0);
+    if (received_bytes < 0) {
+        fprintf(stderr, "Fehler beim Empfang der Map-Response!\n");
+        return 1;
+    }
+    map_result[received_bytes] = '\0'; // Sicherstellen, dass der String terminiert wird
+
     printf("Map-Result: %s\n", map_result);
 
     zmq_send(requester, "red", 3, 0);
+
     char reduce_result[MAX_MSG_LEN];
+    memset(reduce_result, 0, MAX_MSG_LEN);
     zmq_recv(requester, reduce_result, MAX_MSG_LEN, 0);
     printf("Reduce-Result: %s\n", reduce_result);
 
@@ -54,7 +68,6 @@ int main(int argc, char *argv[]) {
     }
 
     zmq_close(requester);
-    zmq_ctx_destroy(context);
+    zmq_ctx_term(context);
     return 0;
 }
-

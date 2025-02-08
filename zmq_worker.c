@@ -16,15 +16,21 @@ void normalize_word(char *word) {
 
 // Map-Funktion: Erzeugt Key-Value-Paare aus dem Eingabetext
 void map(const char *text, char *output) {
-    char *token = strtok(strdup(text), " ");
+    char *text_copy = strdup(text);
+    if (!text_copy) {
+        return; // Speicherallokation fehlgeschlagen
+    }
+
     output[0] = '\0';
+    char *token = strtok(text_copy, " ");
     while (token) {
         normalize_word(token);
         strcat(output, token);
         strcat(output, "1");
         token = strtok(NULL, " ");
     }
-    free(token);
+
+    free(text_copy); // Speicher freigeben
 }
 
 // Reduce-Funktion: Zählt die Häufigkeit der Wörter
@@ -34,6 +40,10 @@ void reduce(const char *input, char *output) {
     int word_count = 0;
 
     char *input_copy = strdup(input);
+    if (!input_copy) {
+        return; // Speicherallokation fehlgeschlagen
+    }
+
     char *token = strtok(input_copy, "1");
     while (token) {
         normalize_word(token);
@@ -52,7 +62,7 @@ void reduce(const char *input, char *output) {
         }
         token = strtok(NULL, "1");
     }
-    free(input_copy);
+    free(input_copy); // Speicher freigeben
 
     output[0] = '\0';
     for (int i = 0; i < word_count; i++) {
@@ -69,12 +79,23 @@ int main(int argc, char *argv[]) {
 
     void *context = zmq_ctx_new();
     void *responder = zmq_socket(context, ZMQ_REP);
+    if (!context || !responder) {
+        fprintf(stderr, "Fehler beim Erstellen des ZMQ-Sockets.\n");
+        return 1;
+    }
+
     char endpoint[30];
     snprintf(endpoint, sizeof(endpoint), "tcp://*:%s", argv[1]);
-    zmq_bind(responder, endpoint);
+    if (zmq_bind(responder, endpoint) != 0) {
+        fprintf(stderr, "Fehler beim Binden an Port %s.\n", argv[1]);
+        zmq_close(responder);
+        zmq_ctx_destroy(context);
+        return 1;
+    }
 
     while (1) {
         char buffer[MAX_MSG_LEN];
+        memset(buffer, 0, MAX_MSG_LEN);  // Speicher initialisieren
         zmq_recv(responder, buffer, MAX_MSG_LEN, 0);
         buffer[strlen(buffer)] = '\0';
 
@@ -93,6 +114,6 @@ int main(int argc, char *argv[]) {
     }
 
     zmq_close(responder);
-    zmq_ctx_destroy(context);
+    zmq_ctx_term(context); // Verhindert Blockierung im Gegensatz zu zmq_ctx_destroy()
     return 0;
 }
