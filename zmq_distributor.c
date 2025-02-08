@@ -7,17 +7,15 @@
 #include <pthread.h>
 
 
-#define MAX_MSG_LEN 1500
+#define MAX_MSG_LEN 1497
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
-        printf("Usage: %s <file.txt> <worker port 1> <worker port 2> ...\n", argv[0]);
         return 1;
     }
 
     FILE *file = fopen(argv[1], "r");
     if (!file) {
-        perror("Fehler beim Öffnen der Datei");
         return 1;
     }
 

@@ -9,7 +9,7 @@
 
 
 
-#define MAX_MSG_LEN 1500
+#define MAX_MSG_LEN 1497
 
 void normalize_word(char *word) {
     for (int i = 0; word[i]; i++) {
