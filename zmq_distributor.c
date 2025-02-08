@@ -34,7 +34,8 @@ int main(int argc, char *argv[]) {
     }
 
     char map_request[MAX_MSG_LEN];
-    snprintf(map_request, sizeof(map_request), "map%s", text);
+    snprintf(map_request, sizeof(map_request), "map%.*s", (int)(sizeof(map_request) - 4), text);
+
     zmq_send(requester, map_request, strlen(map_request), 0);
 
     char map_result[MAX_MSG_LEN];
